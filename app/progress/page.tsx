@@ -20,10 +20,16 @@ interface DataPoint {
   e1rm: number;
 }
 
+// ChartPoint matches what ProgressChart expects
+interface ChartPoint {
+  week: number;
+  weight: number;
+}
+
 interface Series {
   name: string;
   color: string;
-  data: DataPoint[];
+  data: ChartPoint[];
 }
 
 const COLORS = [
