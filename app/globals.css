@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background-color: #0a0a0a;
+  color: #fafafa;
+  font-family: "Courier New", Courier, monospace;
+  overscroll-behavior: none;
+}
+
+/* Bottom safe area for iPhone home indicator */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+/* Consistent input style */
+.input-field {
+  @apply w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-fg font-mono
+         focus:outline-none focus:border-zinc-500 placeholder-zinc-600;
+}
+
+/* Tap-safe button base */
+.btn {
+  @apply min-h-[44px] px-4 py-2 font-mono font-bold rounded transition-colors;
+}
+
+.btn-primary {
+  @apply btn bg-fg text-bg hover:bg-zinc-200 active:bg-zinc-300;
+}
+
+.btn-ghost {
+  @apply btn border border-zinc-700 text-fg hover:border-zinc-500 active:bg-zinc-900;
+}
+
+.btn-danger {
+  @apply btn bg-red-900/40 border border-red-800 text-red-300 hover:bg-red-900/60;
+}
+
+/* Scrollable without scrollbar visible on mobile */
+.scroll-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scroll-hidden::-webkit-scrollbar {
+  display: none;
+}

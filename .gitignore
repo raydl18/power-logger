@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+
+# env files — never commit these
+.env
+.env.local
+.env.*.local
+
+# PWA generated files
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
+public/sw.js.map
+public/workbox-*.js.map
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
