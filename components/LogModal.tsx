@@ -97,7 +97,7 @@ export default function LogModal({ lift, userId, weekNumber, dayNumber, onClose,
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end"
+      className="fixed inset-0 z-[60] flex items-end"
       style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
