@@ -24,6 +24,7 @@ export default function LogModal({ lift, userId, weekNumber, dayNumber, onClose,
   const [saved,  setSaved]  = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const firstInputRef = useRef<HTMLInputElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -49,6 +50,20 @@ export default function LogModal({ lift, userId, weekNumber, dayNumber, onClose,
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
   }, [onClose]);
+
+  // Lift the sheet above the soft keyboard on iOS (visualViewport shrinks, layout viewport doesn't)
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const kb = window.innerHeight - vv.height;
+      if (sheetRef.current) {
+        sheetRef.current.style.transform = kb > 0 ? `translateY(-${kb}px)` : "";
+      }
+    };
+    vv.addEventListener("resize", update);
+    return () => vv.removeEventListener("resize", update);
+  }, []);
 
   async function handleDone() {
     if (saving || saved) return;
@@ -87,6 +102,7 @@ export default function LogModal({ lift, userId, weekNumber, dayNumber, onClose,
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
+        ref={sheetRef}
         className="w-full bg-zinc-950 border-t border-zinc-800 rounded-t-2xl flex flex-col"
         style={{ maxHeight: "92dvh" }}
       >
