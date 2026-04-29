@@ -148,7 +148,7 @@ export default function CalendarPage() {
   return (
     <div className="min-h-screen bg-bg pb-24">
       <header className="px-4 pt-12 pb-4 border-b border-border">
-        <h1 className="text-xl font-bold">Calendar</h1>
+        <h1 className="display text-3xl">Calendar</h1>
         {startDate && (
           <p className="text-sm text-muted mt-1">
             {isGuest ? "guest mode · " : ""}

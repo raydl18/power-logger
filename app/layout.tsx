@@ -1,5 +1,19 @@
 import type { Metadata, Viewport } from "next";
+import { JetBrains_Mono, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
+
+const barlowCondensed = Barlow_Condensed({
+  weight: ["700", "800"],
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Power Logger",
@@ -8,7 +22,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "WrkTrack",
+    title: "Power Logger",
   },
   icons: {
     apple: "/icons/icon-192x192.png",
@@ -26,8 +40,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="bg-bg text-fg font-mono min-h-screen">{children}</body>
+    <html lang="en" className={`${jetbrainsMono.variable} ${barlowCondensed.variable}`}>
+      <body className="bg-bg text-fg min-h-screen">{children}</body>
     </html>
   );
 }

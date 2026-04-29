@@ -129,7 +129,7 @@ export default function ProgressPage() {
   return (
     <div className="min-h-screen bg-bg pb-20">
       <header className="px-4 pt-12 pb-4 border-b border-border">
-        <h1 className="text-xl font-bold uppercase tracking-tight">Progress</h1>
+        <h1 className="display text-3xl">Progress</h1>
         {!loading && allLogs.length > 0 && (
           <p className="text-xs text-muted mt-1">{allLogs.length} sets logged across {liftNames.length} lifts</p>
         )}

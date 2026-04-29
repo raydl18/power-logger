@@ -398,7 +398,7 @@ function LogContent() {
       {/* Header */}
       <header className="px-4 pt-12 pb-3 border-b border-border">
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-lg font-bold">Workout Log</h1>
+          <h1 className="display text-3xl">Workout Log</h1>
           {userId === null && (
             <Link href="/auth/signup"
               className="text-xs bg-white text-black px-3 py-1.5 rounded-full font-semibold">

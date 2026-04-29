@@ -12,7 +12,8 @@ module.exports = {
           "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', '"Roboto"',
           '"Helvetica Neue"', "Arial", "sans-serif",
         ],
-        mono: ['"SF Mono"', "ui-monospace", '"Fira Code"', '"Courier New"', "monospace"],
+        mono: ["var(--font-mono)", '"SF Mono"', "ui-monospace", '"Fira Code"', '"Courier New"', "monospace"],
+        display: ["var(--font-display)", '"Barlow Condensed"', "sans-serif"],
       },
       colors: {
         bg: "#111111",

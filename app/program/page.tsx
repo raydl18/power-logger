@@ -17,7 +17,7 @@ export default async function ProgramListPage() {
     return (
       <div className="min-h-screen bg-bg pb-20">
         <header className="px-4 pt-12 pb-4 border-b border-border">
-          <h1 className="text-xl font-bold uppercase tracking-tight">Programs</h1>
+          <h1 className="display text-3xl">Programs</h1>
         </header>
         <main className="px-4 py-6 space-y-6">
           <div className="text-center py-4">
@@ -62,7 +62,7 @@ export default async function ProgramListPage() {
   return (
     <div className="min-h-screen bg-bg pb-20">
       <header className="px-4 pt-12 pb-4 border-b border-border flex items-center justify-between">
-        <h1 className="text-xl font-bold uppercase tracking-tight">Programs</h1>
+        <h1 className="display text-3xl">Programs</h1>
         <Link href="/program/new"
           className="h-9 px-4 bg-white text-black text-sm font-bold rounded-xl flex items-center">
           + New
