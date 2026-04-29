@@ -8,20 +8,24 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        mono: ['"Courier New"', "Courier", "monospace"],
+        sans: [
+          "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', '"Roboto"',
+          '"Helvetica Neue"', "Arial", "sans-serif",
+        ],
+        mono: ['"SF Mono"', "ui-monospace", '"Fira Code"', '"Courier New"', "monospace"],
       },
       colors: {
-        bg: "#0a0a0a",
-        fg: "#fafafa",
-        border: "#2a2a2a",
-        muted: "#666",
+        bg: "#111111",
+        fg: "#f0f0f0",
+        border: "#2d2d2d",
+        muted: "#888",
         rpe6: "#4ade80",
         rpe7: "#facc15",
         rpe8: "#fb923c",
         rpe9: "#f87171",
       },
       minHeight: {
-        touch: "44px",
+        touch: "48px",
       },
     },
   },
