@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Workout Tracker",
+  title: "Power Logger",
   description: "Powerlifting program tracker — log, track, and share your workouts.",
   manifest: "/manifest.json",
   appleWebApp: {
