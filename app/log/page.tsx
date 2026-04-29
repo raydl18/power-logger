@@ -322,21 +322,43 @@ function LogContent() {
       return;
     }
 
-    const { data } = await supabase
-      .from("custom_logs")
-      .select("id, exercise_name, actual_weight, actual_reps, actual_rpe, logged_at")
-      .eq("user_id", userId)
-      .eq("log_date", d)
-      .order("logged_at", { ascending: true });
+    // Compute local-day boundaries as UTC ISO strings so the filter matches
+    // the same day the calendar highlights (both use JS local-time date).
+    const dayStart = new Date(d + "T00:00:00").toISOString();
+    const dayEnd   = new Date(d + "T23:59:59.999").toISOString();
 
-    if (!data) { setLoading(false); return; }
+    const [{ data: customData }, { data: programData }] = await Promise.all([
+      supabase
+        .from("custom_logs")
+        .select("id, exercise_name, actual_weight, actual_reps, actual_rpe, logged_at")
+        .eq("user_id", userId)
+        .eq("log_date", d)
+        .order("logged_at", { ascending: true }),
+      supabase
+        .from("logs")
+        .select("id, actual_weight, actual_reps, actual_rpe, logged_at, lifts(name)")
+        .eq("user_id", userId)
+        .gte("logged_at", dayStart)
+        .lte("logged_at", dayEnd)
+        .order("logged_at", { ascending: true }),
+    ]);
 
     const map = new Map<string, LoggedSet[]>();
-    data.forEach((row: any) => {
+
+    (programData ?? []).forEach((row: any) => {
+      const name: string | undefined = row.lifts?.name;
+      if (!name) return;
+      const arr = map.get(name) ?? [];
+      arr.push({ id: row.id, weight: row.actual_weight, reps: row.actual_reps, rpe: row.actual_rpe, logged_at: row.logged_at });
+      map.set(name, arr);
+    });
+
+    (customData ?? []).forEach((row: any) => {
       const arr = map.get(row.exercise_name) ?? [];
       arr.push({ id: row.id, weight: row.actual_weight, reps: row.actual_reps, rpe: row.actual_rpe, logged_at: row.logged_at });
       map.set(row.exercise_name, arr);
     });
+
     setExercises(Array.from(map.entries()).map(([name, sets]) => ({ name, sets })));
     setLoading(false);
   }, [userId, supabase]);
