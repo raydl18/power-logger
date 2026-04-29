@@ -92,6 +92,12 @@ export default function SignupPage() {
             log in
           </Link>
         </p>
+
+        <div className="mt-4 text-center">
+          <Link href="/log" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
+            continue as guest →
+          </Link>
+        </div>
       </div>
     </div>
   );

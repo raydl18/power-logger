@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+// No auth-gating — all routes are accessible without an account.
+// This middleware only refreshes the Supabase session cookie so
+// server components get an up-to-date user.
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -9,40 +12,20 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
+        getAll() { return request.cookies.getAll(); },
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options as Parameters<typeof supabaseResponse.cookies.set>[2])
           );
         },
       },
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
-
-  const publicPaths = ["/auth/login", "/auth/signup"];
-  const isProgramPublic = pathname.startsWith("/program/");
-
-  if (!user && !publicPaths.includes(pathname) && !isProgramPublic && pathname !== "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
-  }
-
-  if (user && publicPaths.includes(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/program";
-    return NextResponse.redirect(url);
-  }
+  // Refresh session (do not gate on the result)
+  await supabase.auth.getUser();
 
   return supabaseResponse;
 }
