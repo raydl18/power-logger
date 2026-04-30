@@ -138,21 +138,14 @@ export default function CalendarPage() {
         return;
       }
 
-      const { data: follow } = await supabase
-        .from("program_follows")
-        .select("start_date")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .single();
-
-      const start = follow
-        ? new Date(follow.start_date)
-        : (() => { const d = new Date(); d.setMonth(d.getMonth() - 2); return d; })();
-      setStartDate(start);
-      setMonths(monthsBetween(start, new Date()));
-
-      const [{ data: logs }, { data: customLogs }] = await Promise.all([
+      const [{ data: follow }, { data: logs }, { data: customLogs }] = await Promise.all([
+        supabase
+          .from("program_follows")
+          .select("start_date")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .single(),
         supabase
           .from("logs")
           .select("actual_rpe, logged_at, lifts(name)")
@@ -183,6 +176,18 @@ export default function CalendarPage() {
         map.set(date, d);
       });
 
+      // Start from the earliest of: first log date, program follow date, or 2 months ago
+      const allDates = [...map.keys()].sort();
+      const logStart    = allDates.length > 0 ? new Date(allDates[0] + "T12:00:00") : null;
+      const followStart = follow?.start_date ? new Date(follow.start_date) : null;
+      const fallback    = (() => { const d = new Date(); d.setMonth(d.getMonth() - 2); return d; })();
+
+      const start = [logStart, followStart, fallback]
+        .filter(Boolean)
+        .reduce((earliest, d) => d! < earliest! ? d : earliest) as Date;
+
+      setStartDate(start);
+      setMonths(monthsBetween(start, new Date()));
       setDayMap(map);
       setLoading(false);
     }
