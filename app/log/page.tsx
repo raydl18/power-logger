@@ -148,6 +148,11 @@ function SetInput({ defaultWeight, defaultReps, defaultRpe, onLog, onCancel }: {
       </div>
 
       <div className="flex gap-1.5 mb-3">
+        <button type="button" onClick={() => setRpe("")}
+          className={`flex-1 h-9 rounded-lg text-sm font-bold border transition-colors
+            ${rpe === "" ? "bg-zinc-700 border-zinc-500 text-white" : "bg-zinc-800 border-zinc-700 text-zinc-600"}`}>
+          —
+        </button>
         {[6,7,8,9,10].map((r) => (
           <button key={r} type="button" onClick={() => setRpe(r.toString())}
             className={`flex-1 h-9 rounded-lg text-sm font-bold border transition-colors
