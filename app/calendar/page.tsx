@@ -168,7 +168,7 @@ export default function CalendarPage() {
       (logs ?? []).forEach((l: any) => {
         if (!l.logged_at) return;
         const date = toDateStr(new Date(l.logged_at));
-        const d = map.get(date) ?? { date, maxRpe: null, exercises: [] };
+        const d = map.get(date) ?? { date, maxRpe: null, exercises: [] as string[] };
         if (l.actual_rpe != null && (d.maxRpe === null || l.actual_rpe > d.maxRpe)) d.maxRpe = l.actual_rpe;
         const name = l.lifts?.name;
         if (name && !d.exercises.includes(name)) d.exercises.push(name);
@@ -177,7 +177,7 @@ export default function CalendarPage() {
 
       (customLogs ?? []).forEach((c: any) => {
         const date = c.log_date ?? toDateStr(new Date(c.logged_at));
-        const d = map.get(date) ?? { date, maxRpe: null, exercises: [] };
+        const d = map.get(date) ?? { date, maxRpe: null, exercises: [] as string[] };
         if (c.actual_rpe != null && (d.maxRpe === null || c.actual_rpe > d.maxRpe)) d.maxRpe = c.actual_rpe;
         if (c.exercise_name && !d.exercises.includes(c.exercise_name)) d.exercises.push(c.exercise_name);
         map.set(date, d);
