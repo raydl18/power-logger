@@ -118,6 +118,16 @@ export default function ExercisePage({ params }: { params: { name: string } }) {
   });
   const dateGroups = [...byDate.entries()].reverse();
 
+  // Per-rep max records
+  const repRecords: Record<number, { weight: number; date: string }> = {};
+  sets.forEach(s => {
+    if (!s.weight || !s.reps) return;
+    const existing = repRecords[s.reps];
+    if (!existing || s.weight > existing.weight)
+      repRecords[s.reps] = { weight: s.weight, date: s.date };
+  });
+  const repCounts = Object.keys(repRecords).map(Number).sort((a, b) => a - b);
+
   // Best e1RM per session, chronological — used for the graph
   const graphData = [...byDate.entries()].map(([date, dateSets]) => {
     const valid = dateSets.filter(s => s.weight && s.reps);
@@ -269,10 +279,52 @@ export default function ExercisePage({ params }: { params: { name: string } }) {
             </div>
           )}
 
-          {/* ── Records — coming next ─────────────────────────────────── */}
+          {/* ── Records ──────────────────────────────────────────────── */}
           {tab === "records" && (
-            <div className="flex items-center justify-center py-16">
-              <p className="text-muted text-sm">coming soon.</p>
+            <div className="px-4">
+              {repCounts.length === 0 ? (
+                <div className="text-center py-16">
+                  <p className="text-muted text-sm">no records yet — log some sets with weights and reps.</p>
+                </div>
+              ) : (
+                <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+                  <div className="grid grid-cols-2 px-4 py-2 border-b border-zinc-800">
+                    <span className="label">Rep Max</span>
+                    <span className="label text-right">Best Weight</span>
+                  </div>
+
+                  {repCounts.map((n, idx) => {
+                    const rec = repRecords[n];
+
+                    // Find the single heaviest weight done for any higher rep count
+                    const heavier = repCounts
+                      .filter(r => r > n && repRecords[r].weight > rec.weight)
+                      .reduce<{ weight: number; reps: number } | null>((best, r) => {
+                        if (!best || repRecords[r].weight > best.weight)
+                          return { weight: repRecords[r].weight, reps: r };
+                        return best;
+                      }, null);
+
+                    return (
+                      <div key={n}
+                        className={`px-4 py-3 ${idx > 0 ? "border-t border-zinc-800" : ""}`}>
+                        <div className="flex items-center justify-between">
+                          <span className="display text-lg">{n}RM</span>
+                          <span className="font-display font-bold text-base">{rec.weight}lb</span>
+                        </div>
+                        {heavier && (
+                          <div className="flex items-center justify-between mt-0.5">
+                            <span className="text-xs text-zinc-700">also done heavier</span>
+                            <span className="text-xs text-zinc-600 mono">
+                              {heavier.weight}lb × {heavier.reps} reps
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
