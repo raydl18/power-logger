@@ -9,6 +9,40 @@ import { filterExercises } from "@/lib/exercises";
 import { rpeColor } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
 
+// ── Icons ─────────────────────────────────────────────────────────────────────
+
+function ChevronLeft() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13L5 8l5-5" />
+    </svg>
+  );
+}
+function ChevronRight() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 3l5 5-5 5" />
+    </svg>
+  );
+}
+function BoltIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-yellow-400 shrink-0">
+      <path d="M8.5 1L3 8h4.5L5.5 13 11 6H6.5L8.5 1z" />
+    </svg>
+  );
+}
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M2 7L5 10 11 4" />
+    </svg>
+  );
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface LoggedSet {
@@ -41,6 +75,16 @@ function formatDate(dateStr: string) {
   return new Date(dateStr + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "short", month: "long", day: "numeric",
   });
+}
+
+function normalizeExerciseName(name: string): string {
+  // Strip program descriptor after " - " (e.g. "Bench Press - Back-off" → "Bench Press")
+  const dashIdx = name.indexOf(' - ');
+  if (dashIdx > 0) return name.slice(0, dashIdx).trim();
+  // Strip common standalone training-intent suffixes
+  return name
+    .replace(/\s+(?:back[\s-]?off|backoff|volume|heavy|light|top[\s-]?set|work[\s-]?set|opener|comp(?:etition)?|accessory)\s*$/i, '')
+    .trim();
 }
 
 function rpeQuickStyle(r: number) {
@@ -94,7 +138,7 @@ function SetInput({ defaultWeight, defaultReps, defaultRpe, onLog, onCancel }: {
               value={val}
               onChange={(e) => set(e.target.value)}
               onFocus={(e) => e.target.select()}
-              className="w-full h-16 text-center text-2xl font-bold bg-zinc-800 rounded-xl border border-zinc-700 focus:border-zinc-400 outline-none"
+              className="w-full h-16 text-center text-3xl font-display font-extrabold bg-zinc-800 rounded-xl border border-zinc-700 focus:border-zinc-400 outline-none"
               placeholder="—"
               min="0"
               step={step}
@@ -119,9 +163,9 @@ function SetInput({ defaultWeight, defaultReps, defaultRpe, onLog, onCancel }: {
           Cancel
         </button>
         <button onClick={handleLog} disabled={saved}
-          className={`flex-1 h-14 rounded-xl font-bold text-base transition-colors
+          className={`flex-1 h-14 rounded-xl display text-base transition-colors
             ${saved ? "bg-green-700 text-white" : "bg-white text-black active:bg-zinc-200"}`}>
-          {saved ? "✓  Logged!" : "Log Set"}
+          {saved ? "LOGGED" : "LOG SET"}
         </button>
       </div>
     </div>
@@ -156,7 +200,7 @@ function ExerciseCard({ exercise, openSet, onToggleSet, onLog }: {
                 {s.rpe != null && (
                   <span className={`text-xs font-semibold ${rpeColor(s.rpe)}`}>@{s.rpe}</span>
                 )}
-                <span className="ml-auto text-green-500">✓</span>
+                <CheckIcon className="ml-auto text-green-500" />
               </div>
             ))}
           </div>
@@ -231,7 +275,7 @@ function ExerciseSearchSheet({ existing, programExercises, onSelect, onClose }: 
 
           {!query && programExercises.length > 0 && (
             <>
-              <p className="px-4 py-2 text-xs text-zinc-500 uppercase tracking-wide font-medium">From your program</p>
+              <p className="px-4 py-2 label">From your program</p>
               {programExercises.map((name) => (
                 <button key={name} onClick={() => onSelect(name)}
                   className="w-full text-left px-4 py-3.5 flex items-center justify-between hover:bg-zinc-900 active:bg-zinc-800">
@@ -240,7 +284,7 @@ function ExerciseSearchSheet({ existing, programExercises, onSelect, onClose }: 
                 </button>
               ))}
               <div className="border-t border-zinc-800 my-1" />
-              <p className="px-4 py-2 text-xs text-zinc-500 uppercase tracking-wide font-medium">All exercises</p>
+              <p className="px-4 py-2 label">All exercises</p>
             </>
           )}
 
@@ -302,7 +346,7 @@ function LogContent() {
             const names = Array.from(new Set(
               lifts
                 .filter((l: any) => l.days?.weeks?.program_id === follow.program_id)
-                .map((l: any) => l.name as string)
+                .map((l: any) => normalizeExerciseName(l.name as string))
             ));
             setProgramExs(names);
           });
@@ -346,8 +390,8 @@ function LogContent() {
     const map = new Map<string, LoggedSet[]>();
 
     (programData ?? []).forEach((row: any) => {
-      const name: string | undefined = row.lifts?.name;
-      if (!name) return;
+      if (!row.lifts?.name) return;
+      const name = normalizeExerciseName(row.lifts.name as string);
       const arr = map.get(name) ?? [];
       arr.push({ id: row.id, weight: row.actual_weight, reps: row.actual_reps, rpe: row.actual_rpe, logged_at: row.logged_at });
       map.set(name, arr);
@@ -410,8 +454,8 @@ function LogContent() {
         {/* Date nav */}
         <div className="flex items-center gap-3">
           <button onClick={() => { setDate(offsetDate(date,-1)); setOpenSetFor(null); }}
-            className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-700 text-xl font-light">
-            ‹
+            className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-700">
+            <ChevronLeft />
           </button>
           <div className="flex-1 text-center">
             <p className="font-semibold text-sm">{formatDate(date)}</p>
@@ -419,8 +463,8 @@ function LogContent() {
           </div>
           <button onClick={() => { setDate(offsetDate(date,1)); setOpenSetFor(null); }}
             disabled={isToday}
-            className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-700 text-xl font-light disabled:opacity-30">
-            ›
+            className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-700 disabled:opacity-30">
+            <ChevronRight />
           </button>
         </div>
       </header>
@@ -428,7 +472,7 @@ function LogContent() {
       {/* Guest banner */}
       {userId === null && (
         <div className="mx-4 mt-3 px-4 py-3 bg-zinc-900 rounded-xl border border-zinc-800 flex items-center gap-3">
-          <span className="text-yellow-400">⚡</span>
+          <BoltIcon />
           <p className="text-xs text-zinc-400 flex-1">
             Saved locally.{" "}
             <Link href="/auth/signup" className="text-white underline">Create account</Link>{" "}
@@ -444,6 +488,14 @@ function LogContent() {
           <>
             {exercises.length === 0 && (
               <div className="text-center py-10 px-4">
+                <svg width="52" height="28" viewBox="0 0 52 28" fill="none" stroke="currentColor"
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-700 mx-auto mb-4">
+                  <rect x="1" y="9" width="6" height="10" rx="2" />
+                  <rect x="7" y="6" width="5" height="16" rx="2" />
+                  <line x1="12" y1="14" x2="40" y2="14" />
+                  <rect x="40" y="6" width="5" height="16" rx="2" />
+                  <rect x="45" y="9" width="6" height="10" rx="2" />
+                </svg>
                 <p className="text-zinc-400 font-medium mb-1">No exercises yet</p>
                 <p className="text-zinc-600 text-sm">Tap "Add Exercise" below to start</p>
               </div>
@@ -471,9 +523,7 @@ function LogContent() {
             {/* Program quick-add chips */}
             {programExs.length > 0 && (
               <div className="px-4 pt-5">
-                <p className="text-xs text-zinc-500 uppercase tracking-wide font-medium mb-2">
-                  Quick-add from program
-                </p>
+                <p className="label mb-2">Quick-add from program</p>
                 <div className="flex flex-wrap gap-2">
                   {programExs
                     .filter((n) => !exercises.find((e) => e.name === n))

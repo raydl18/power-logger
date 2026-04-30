@@ -6,26 +6,36 @@ import { createClient } from "@/lib/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import { getAllGuestWorkoutDates } from "@/lib/guestWorkout";
 
-interface WorkoutDay {
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type FilterMode = "rpe" | "muscle";
+type MuscleGroup = "chest" | "back" | "legs" | "shoulders" | "arms";
+
+interface DayData {
   date: string;
-  weekNumber: number; // 0 = guest (no RPE info)
-  dayLabel: string;
+  maxRpe: number | null;
+  exercises: string[];
 }
 
-const WEEK_RPE: Record<number, { color: string; bg: string; label: string }> = {
-  1: { color: "#4ade80", bg: "rgba(74,222,128,0.25)",  label: "RPE 6" },
-  2: { color: "#facc15", bg: "rgba(250,204,21,0.25)",  label: "RPE 7" },
-  3: { color: "#fb923c", bg: "rgba(251,146,60,0.25)",  label: "RPE 8" },
-  4: { color: "#f87171", bg: "rgba(248,113,113,0.25)", label: "RPE 9" },
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const MUSCLE_COLORS: Record<MuscleGroup, { color: string; label: string }> = {
+  legs:      { color: "#3b82f6", label: "Legs"      },
+  chest:     { color: "#ef4444", label: "Chest"     },
+  arms:      { color: "#22c55e", label: "Arms"      },
+  shoulders: { color: "#a855f7", label: "Shoulders" },
+  back:      { color: "#eab308", label: "Back"      },
 };
 
-const GUEST_STYLE = { color: "#71717a", bg: "rgba(113,113,122,0.25)" };
+const MUSCLE_ORDER: MuscleGroup[] = ["legs", "chest", "back", "shoulders", "arms"];
 
 const MONTH_NAMES = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December",
 ];
 const DAY_NAMES = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function toDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -50,14 +60,62 @@ function calendarGrid(year: number, month: number): (number | null)[] {
   return grid;
 }
 
+function rpeColor(rpe: number | null): string {
+  if (rpe === null) return "#52525b";   // gray — logged but no RPE stored
+  if (rpe <= 6)     return "#4ade80";
+  if (rpe === 7)    return "#facc15";
+  if (rpe === 8)    return "#fb923c";
+  if (rpe === 9)    return "#f87171";
+  return "#dc2626";                      // RPE 10
+}
+
+function rpeBg(rpe: number | null): string {
+  if (rpe === null) return "rgba(82,82,91,0.3)";
+  if (rpe <= 6)     return "rgba(74,222,128,0.2)";
+  if (rpe === 7)    return "rgba(250,204,21,0.2)";
+  if (rpe === 8)    return "rgba(251,146,60,0.2)";
+  if (rpe === 9)    return "rgba(248,113,113,0.2)";
+  return "rgba(220,38,38,0.2)";
+}
+
+function getMuscleGroup(name: string): MuscleGroup | null {
+  const n = name.toLowerCase();
+  // Legs — check before arm "curl" to catch "leg curl"
+  if (/squat|leg press|leg curl|leg extension|hamstring|rdl|romanian|stiff.?leg|hack squat|calf|lunge|hip thrust|hip abduction|glute|deadlift/i.test(n)) return "legs";
+  // Arms — close grip bench is tricep-focused
+  if (/close.?grip|tricep|skull crusher|pushdown|\bbicep\b|\bcurl\b|forearm|\bdip\b/i.test(n)) return "arms";
+  // Shoulders — before back to catch "upright row", "face pull"
+  if (/\bohp\b|push press|overhead press|shoulder press|lateral raise|front raise|arnold|military press|upright row|face pull|rear delt/i.test(n)) return "shoulders";
+  // Chest
+  if (/bench|chest|pec|cable fly|incline press|decline/i.test(n)) return "chest";
+  // Back
+  if (/\brow\b|pull.?up|chin.?up|pulldown|back extension|good morning/i.test(n)) return "back";
+  // Catch-alls
+  if (/press/i.test(n)) return "chest";
+  if (/pull|lat\b/i.test(n)) return "back";
+  return null;
+}
+
+function getMuscleGroups(exercises: string[]): MuscleGroup[] {
+  const groups = new Set<MuscleGroup>();
+  exercises.forEach(e => {
+    const g = getMuscleGroup(e);
+    if (g) groups.add(g);
+  });
+  return MUSCLE_ORDER.filter(g => groups.has(g));
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function CalendarPage() {
   const supabase = createClient();
 
-  const [workoutMap, setWorkoutMap] = useState<Map<string, WorkoutDay>>(new Map());
-  const [months, setMonths]         = useState<Date[]>([]);
-  const [startDate, setStartDate]   = useState<Date | null>(null);
-  const [loading, setLoading]       = useState(true);
-  const [isGuest, setIsGuest]       = useState(false);
+  const [dayMap, setDayMap]     = useState<Map<string, DayData>>(new Map());
+  const [months, setMonths]     = useState<Date[]>([]);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [isGuest, setIsGuest]   = useState(false);
+  const [mode, setMode]         = useState<FilterMode>("rpe");
   const today = toDateStr(new Date());
 
   useEffect(() => {
@@ -67,23 +125,19 @@ export default function CalendarPage() {
       if (!user) {
         setIsGuest(true);
         const dates = getAllGuestWorkoutDates();
-        const map = new Map<string, WorkoutDay>();
-        dates.forEach((date) => {
-          map.set(date, { date, weekNumber: 0, dayLabel: "workout" });
-        });
-        setWorkoutMap(map);
-
-        const sortedDates = [...dates].sort();
-        const start = sortedDates.length > 0
-          ? new Date(sortedDates[0])
+        const map = new Map<string, DayData>();
+        dates.forEach(date => map.set(date, { date, maxRpe: null, exercises: [] }));
+        const sorted = [...dates].sort();
+        const start = sorted.length > 0
+          ? new Date(sorted[0])
           : (() => { const d = new Date(); d.setMonth(d.getMonth() - 2); return d; })();
         setStartDate(start);
         setMonths(monthsBetween(start, new Date()));
+        setDayMap(map);
         setLoading(false);
         return;
       }
 
-      // Logged-in: fetch from Supabase
       const { data: follow } = await supabase
         .from("program_follows")
         .select("start_date")
@@ -98,61 +152,51 @@ export default function CalendarPage() {
       setStartDate(start);
       setMonths(monthsBetween(start, new Date()));
 
-      const { data: completed } = await supabase
-        .from("completed_days")
-        .select("week_number, day_number, completed_at")
-        .eq("user_id", user.id);
+      const [{ data: logs }, { data: customLogs }] = await Promise.all([
+        supabase
+          .from("logs")
+          .select("actual_rpe, logged_at, lifts(name)")
+          .eq("user_id", user.id),
+        supabase
+          .from("custom_logs")
+          .select("actual_rpe, log_date, logged_at, exercise_name")
+          .eq("user_id", user.id),
+      ]);
 
-      const { data: logs } = await supabase
-        .from("logs")
-        .select("week_number, day_number, logged_at")
-        .eq("user_id", user.id);
+      const map = new Map<string, DayData>();
 
-      const { data: customLogs } = await supabase
-        .from("custom_logs")
-        .select("log_date, logged_at")
-        .eq("user_id", user.id);
-
-      const map = new Map<string, WorkoutDay>();
-
-      (logs ?? []).forEach((l: { week_number: number; day_number: number; logged_at: string }) => {
+      (logs ?? []).forEach((l: any) => {
         if (!l.logged_at) return;
         const date = toDateStr(new Date(l.logged_at));
-        if (!map.has(date)) {
-          map.set(date, { date, weekNumber: l.week_number ?? 1, dayLabel: `W${l.week_number} D${l.day_number}` });
-        }
+        const d = map.get(date) ?? { date, maxRpe: null, exercises: [] };
+        if (l.actual_rpe != null && (d.maxRpe === null || l.actual_rpe > d.maxRpe)) d.maxRpe = l.actual_rpe;
+        const name = l.lifts?.name;
+        if (name && !d.exercises.includes(name)) d.exercises.push(name);
+        map.set(date, d);
       });
 
-      (customLogs ?? []).forEach((c: { log_date: string; logged_at: string }) => {
+      (customLogs ?? []).forEach((c: any) => {
         const date = c.log_date ?? toDateStr(new Date(c.logged_at));
-        if (!map.has(date)) {
-          map.set(date, { date, weekNumber: 0, dayLabel: "custom workout" });
-        }
+        const d = map.get(date) ?? { date, maxRpe: null, exercises: [] };
+        if (c.actual_rpe != null && (d.maxRpe === null || c.actual_rpe > d.maxRpe)) d.maxRpe = c.actual_rpe;
+        if (c.exercise_name && !d.exercises.includes(c.exercise_name)) d.exercises.push(c.exercise_name);
+        map.set(date, d);
       });
 
-      (completed ?? []).forEach((c: { week_number: number; day_number: number; completed_at: string }) => {
-        if (!c.completed_at) return;
-        const date = toDateStr(new Date(c.completed_at));
-        map.set(date, { date, weekNumber: c.week_number ?? 1, dayLabel: `W${c.week_number} D${c.day_number}` });
-      });
-
-      setWorkoutMap(map);
+      setDayMap(map);
       setLoading(false);
     }
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const legend = Object.entries(WEEK_RPE).map(([w, v]) => ({ week: parseInt(w), ...v }));
-
   return (
     <div className="min-h-screen bg-bg pb-24">
       <header className="px-4 pt-12 pb-4 border-b border-border">
         <h1 className="display text-3xl">Calendar</h1>
         {startDate && (
-          <p className="text-sm text-muted mt-1">
-            {isGuest ? "guest mode · " : ""}
-            {workoutMap.size} workout{workoutMap.size !== 1 ? "s" : ""} logged
+          <p className="text-xs text-muted mt-1">
+            {isGuest ? "guest · " : ""}{dayMap.size} workout{dayMap.size !== 1 ? "s" : ""} logged
           </p>
         )}
       </header>
@@ -160,31 +204,58 @@ export default function CalendarPage() {
       {loading ? (
         <div className="flex items-center justify-center py-16 text-muted text-sm">loading…</div>
       ) : (
-        <main className="px-4 py-4 space-y-8">
+        <main className="px-4 py-4 space-y-5">
           {isGuest && (
-            <div className="flex items-center justify-between bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3">
-              <p className="text-sm text-muted">tracking as guest</p>
-              <Link href="/auth/signup" className="text-sm text-white underline">
-                create account →
-              </Link>
+            <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3">
+              <p className="text-xs text-muted">tracking as guest</p>
+              <Link href="/auth/signup" className="text-xs text-white underline">create account →</Link>
             </div>
           )}
 
-          {/* Legend */}
-          <div className="flex gap-3 flex-wrap">
-            {legend.map((l) => (
-              <div key={l.week} className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: l.color }} />
-                <span className="text-xs text-muted">Week {l.week} · {l.label}</span>
-              </div>
+          {/* Mode toggle */}
+          <div className="flex gap-1 p-1 bg-zinc-900 border border-zinc-800 rounded-xl w-fit">
+            {(["rpe", "muscle"] as const).map(m => (
+              <button key={m} onClick={() => setMode(m)}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide uppercase transition-colors
+                  ${mode === m ? "bg-white text-black" : "text-zinc-500 hover:text-zinc-300"}`}>
+                {m === "rpe" ? "RPE" : "Muscle"}
+              </button>
             ))}
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: GUEST_STYLE.color }} />
-              <span className="text-xs text-muted">custom / guest</span>
-            </div>
           </div>
 
-          {/* Month grids — most recent at top */}
+          {/* Legend */}
+          {mode === "rpe" ? (
+            <div className="flex gap-x-3 gap-y-1.5 flex-wrap">
+              {[
+                { label: "≤ 6", rpe: 6 },
+                { label: "7",   rpe: 7 },
+                { label: "8",   rpe: 8 },
+                { label: "9",   rpe: 9 },
+                { label: "10",  rpe: 10 },
+              ].map(({ label, rpe }) => (
+                <div key={label} className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: rpeColor(rpe) }} />
+                  <span className="text-xs text-muted">RPE {label}</span>
+                </div>
+              ))}
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-zinc-600" />
+                <span className="text-xs text-muted">no RPE</span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-x-3 gap-y-1.5 flex-wrap">
+              {MUSCLE_ORDER.map(g => (
+                <div key={g} className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: MUSCLE_COLORS[g].color }} />
+                  <span className="text-xs text-muted">{MUSCLE_COLORS[g].label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Month grids */}
           {[...months].reverse().map((monthDate) => {
             const year  = monthDate.getFullYear();
             const month = monthDate.getMonth();
@@ -192,13 +263,13 @@ export default function CalendarPage() {
 
             return (
               <section key={`${year}-${month}`}>
-                <h2 className="text-sm font-semibold text-muted mb-3 uppercase tracking-wide">
+                <h2 className="text-xs text-zinc-500 uppercase tracking-widest font-medium mb-3">
                   {MONTH_NAMES[month]} {year}
                 </h2>
 
                 <div className="grid grid-cols-7 mb-1">
-                  {DAY_NAMES.map((d) => (
-                    <div key={d} className="text-center text-xs text-zinc-600 py-1">{d}</div>
+                  {DAY_NAMES.map(d => (
+                    <div key={d} className="text-center text-[11px] text-zinc-700 py-1">{d}</div>
                   ))}
                 </div>
 
@@ -207,39 +278,52 @@ export default function CalendarPage() {
                     if (!day) return <div key={`empty-${idx}`} />;
 
                     const dateStr = `${year}-${String(month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-                    const workout = workoutMap.get(dateStr);
-                    const rpeInfo = workout
-                      ? (workout.weekNumber > 0 ? WEEK_RPE[workout.weekNumber] : null)
-                      : null;
-                    const dotColor = workout
-                      ? (rpeInfo?.color ?? GUEST_STYLE.color)
-                      : null;
-                    const bgColor = workout
-                      ? (rpeInfo?.bg ?? GUEST_STYLE.bg)
-                      : undefined;
+                    const data    = dayMap.get(dateStr);
                     const isToday  = dateStr === today;
                     const isFuture = dateStr > today;
+
+                    // What to show in the dots row
+                    let dots: { color: string; key: string }[] = [];
+                    let circleBg: string | undefined;
+
+                    if (data) {
+                      if (mode === "rpe") {
+                        const c = rpeColor(data.maxRpe);
+                        dots = [{ color: c, key: "rpe" }];
+                        circleBg = rpeBg(data.maxRpe);
+                      } else {
+                        const groups = getMuscleGroups(data.exercises);
+                        dots = groups.map(g => ({ color: MUSCLE_COLORS[g].color, key: g }));
+                        circleBg = groups.length > 0
+                          ? `${MUSCLE_COLORS[groups[0]].color}22`
+                          : "rgba(82,82,91,0.2)";
+                        if (dots.length === 0) {
+                          dots = [{ color: "#52525b", key: "none" }];
+                        }
+                      }
+                    }
 
                     return (
                       <Link
                         key={dateStr}
                         href={`/log?date=${dateStr}`}
                         className="flex flex-col items-center py-1 rounded active:opacity-60 transition-opacity"
-                        title={workout?.dayLabel ?? dateStr}
                       >
                         <span
-                          className={`text-sm w-8 h-8 flex items-center justify-center rounded-full font-medium
-                            ${isToday ? "ring-2 ring-white" : ""}
-                            ${isFuture ? "text-zinc-700" : workout ? "text-white font-bold" : "text-zinc-400"}`}
-                          style={bgColor ? { backgroundColor: bgColor } : {}}
+                          className={`text-sm w-8 h-8 flex items-center justify-center rounded-full font-medium transition-colors
+                            ${isToday ? "ring-2 ring-white ring-offset-1 ring-offset-bg" : ""}
+                            ${isFuture ? "text-zinc-700" : data ? "text-white" : "text-zinc-500"}`}
+                          style={circleBg ? { backgroundColor: circleBg } : {}}
                         >
                           {day}
                         </span>
-                        {dotColor && (
-                          <span
-                            className="w-1.5 h-1.5 rounded-full mt-0.5"
-                            style={{ backgroundColor: dotColor }}
-                          />
+                        {dots.length > 0 && (
+                          <div className="flex gap-0.5 mt-0.5 justify-center">
+                            {dots.map(dot => (
+                              <span key={dot.key} className="w-1.5 h-1.5 rounded-full shrink-0"
+                                style={{ backgroundColor: dot.color }} />
+                            ))}
+                          </div>
                         )}
                       </Link>
                     );
@@ -249,12 +333,10 @@ export default function CalendarPage() {
             );
           })}
 
-          {workoutMap.size === 0 && (
+          {dayMap.size === 0 && (
             <div className="text-center py-8">
               <p className="text-muted text-sm">no workouts logged yet.</p>
-              <Link href="/log" className="text-sm text-white underline mt-2 inline-block">
-                log a workout →
-              </Link>
+              <Link href="/log" className="text-sm text-white underline mt-2 inline-block">log a workout →</Link>
             </div>
           )}
         </main>

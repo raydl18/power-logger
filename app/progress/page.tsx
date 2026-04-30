@@ -179,18 +179,18 @@ export default function ProgressPage() {
                 {currentE1rm > 0 && (
                   <div className="grid grid-cols-3 gap-3 mt-4">
                     <div className="border border-border rounded-lg px-3 py-3 text-center">
-                      <p className="text-xl font-bold">{currentE1rm}</p>
-                      <p className="text-[10px] text-muted uppercase tracking-widest mt-0.5">current e1RM</p>
+                      <p className="display text-2xl">{currentE1rm}</p>
+                      <p className="label mt-1">e1RM</p>
                     </div>
                     <div className="border border-border rounded-lg px-3 py-3 text-center">
-                      <p className="text-xl font-bold">{bestE1rm}</p>
-                      <p className="text-[10px] text-muted uppercase tracking-widest mt-0.5">all-time best</p>
+                      <p className="display text-2xl">{bestE1rm}</p>
+                      <p className="label mt-1">best</p>
                     </div>
                     <div className="border border-border rounded-lg px-3 py-3 text-center">
-                      <p className={`text-xl font-bold ${totalGain >= 0 ? "text-green-400" : "text-red-400"}`}>
+                      <p className={`display text-2xl ${totalGain >= 0 ? "text-green-400" : "text-red-400"}`}>
                         {totalGain >= 0 ? "+" : ""}{totalGain}
                       </p>
-                      <p className="text-[10px] text-muted uppercase tracking-widest mt-0.5">total gain</p>
+                      <p className="label mt-1">gain</p>
                     </div>
                   </div>
                 )}
@@ -198,18 +198,18 @@ export default function ProgressPage() {
                 {/* Per-week breakdown table */}
                 {e1rmSeries && e1rmSeries.data.length > 0 && (
                   <div className="mt-4 border border-border rounded-lg overflow-hidden">
-                    <div className="grid grid-cols-3 px-4 py-2 bg-zinc-900 text-[10px] text-muted uppercase tracking-widest">
-                      <span>Week</span>
-                      <span className="text-center">Top Set</span>
-                      <span className="text-right">Est. 1RM</span>
+                    <div className="grid grid-cols-3 px-4 py-2 bg-zinc-900">
+                      <span className="label">Week</span>
+                      <span className="label text-center">Top Set</span>
+                      <span className="label text-right">Est. 1RM</span>
                     </div>
                     {e1rmSeries.data.map((d, i) => {
                       const topSet = series.find((s) => s.name === "Top Set")?.data[i]?.weight ?? 0;
                       return (
                         <div key={d.week} className="grid grid-cols-3 px-4 py-2.5 border-t border-border text-sm">
-                          <span className="text-muted">W{d.week}</span>
-                          <span className="text-center">{topSet}lb</span>
-                          <span className="text-right font-bold">{d.weight}lb</span>
+                          <span className="label self-center">W{d.week}</span>
+                          <span className="text-center mono">{topSet}lb</span>
+                          <span className="text-right font-display font-bold">{d.weight}lb</span>
                         </div>
                       );
                     })}
