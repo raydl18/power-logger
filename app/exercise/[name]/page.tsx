@@ -288,9 +288,10 @@ export default function ExercisePage({ params }: { params: { name: string } }) {
                 </div>
               ) : (
                 <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
-                  <div className="grid grid-cols-2 px-4 py-2 border-b border-zinc-800">
+                  <div className="grid grid-cols-3 px-4 py-2 border-b border-zinc-800">
                     <span className="label">Rep Max</span>
-                    <span className="label text-right">Best Weight</span>
+                    <span className="label text-center">Best Weight</span>
+                    <span className="label text-right">Date</span>
                   </div>
 
                   {repCounts.map((n, idx) => {
@@ -308,16 +309,18 @@ export default function ExercisePage({ params }: { params: { name: string } }) {
                     return (
                       <div key={n}
                         className={`px-4 py-3 ${idx > 0 ? "border-t border-zinc-800" : ""}`}>
-                        <div className="flex items-center justify-between">
+                        <div className="grid grid-cols-3 items-center">
                           <span className="display text-lg">{n}RM</span>
-                          <span className="font-display font-bold text-base">{rec.weight}lb</span>
+                          <span className="font-display font-bold text-base text-center">{rec.weight}lb</span>
+                          <span className="text-xs text-zinc-400 mono text-right">{fmtShort(rec.date)}</span>
                         </div>
                         {heavier && (
-                          <div className="flex items-center justify-between mt-0.5">
-                            <span className="text-xs text-zinc-700">also done heavier</span>
-                            <span className="text-xs text-zinc-600 mono">
-                              {heavier.weight}lb × {heavier.reps} reps
+                          <div className="grid grid-cols-3 items-center mt-0.5">
+                            <span />
+                            <span className="text-xs text-zinc-600 mono text-center">
+                              {heavier.weight}lb × {heavier.reps}
                             </span>
+                            <span className="text-xs text-zinc-700 text-right">heavier</span>
                           </div>
                         )}
                       </div>
