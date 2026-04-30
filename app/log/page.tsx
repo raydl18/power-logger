@@ -185,7 +185,14 @@ function ExerciseCard({ exercise, openSet, onToggleSet, onLog }: {
     <div className="mb-3">
       <div className="mx-4 bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
         <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-          <h3 className="font-semibold text-base">{exercise.name}</h3>
+          <Link href={`/exercise/${encodeURIComponent(exercise.name)}`}
+            className="font-semibold text-base flex items-center gap-1.5 hover:text-zinc-300 active:text-zinc-400">
+            {exercise.name}
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-600">
+              <path d="M4.5 2L8.5 6l-4 4" />
+            </svg>
+          </Link>
           <span className="text-xs text-zinc-500 mono">{exercise.sets.length} sets</span>
         </div>
 
