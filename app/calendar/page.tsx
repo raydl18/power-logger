@@ -149,11 +149,13 @@ export default function CalendarPage() {
         supabase
           .from("logs")
           .select("actual_rpe, logged_at, lifts(name)")
-          .eq("user_id", user.id),
+          .eq("user_id", user.id)
+          .limit(50000),
         supabase
           .from("custom_logs")
           .select("actual_rpe, log_date, logged_at, exercise_name")
-          .eq("user_id", user.id),
+          .eq("user_id", user.id)
+          .limit(50000),
       ]);
 
       const map = new Map<string, DayData>();

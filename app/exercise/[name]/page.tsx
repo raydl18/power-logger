@@ -66,11 +66,13 @@ export default function ExercisePage({ params }: { params: { name: string } }) {
           .select("id, actual_weight, actual_reps, actual_rpe, logged_at, log_date")
           .eq("user_id", user.id)
           .eq("exercise_name", exerciseName)
+          .limit(10000)
           .order("logged_at", { ascending: true }),
         supabase
           .from("logs")
           .select("id, actual_weight, actual_reps, actual_rpe, logged_at, lifts(name)")
           .eq("user_id", user.id)
+          .limit(50000)
           .order("logged_at", { ascending: true }),
       ]);
 
