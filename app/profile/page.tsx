@@ -208,6 +208,23 @@ export default function ProfilePage() {
           )}
         </section>
 
+        {/* Data import */}
+        <section>
+          <h2 className="text-xs text-muted uppercase tracking-widest mb-3">Data</h2>
+          <a href="/import"
+            className="flex items-center justify-between border border-border rounded-lg px-4 py-3
+              hover:border-zinc-600 transition-colors">
+            <div>
+              <p className="text-sm font-semibold">Import from FitNotes</p>
+              <p className="text-xs text-muted mt-0.5">Upload a FitNotes CSV export</p>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-600 shrink-0">
+              <path d="M6 3l5 5-5 5" />
+            </svg>
+          </a>
+        </section>
+
         {/* Find friends */}
         <section>
           <h2 className="text-xs text-muted uppercase tracking-widest mb-3">Find Users</h2>
